@@ -34,6 +34,10 @@ private:
 
 	UInputComponent* InputComponent = nullptr;
 
+	const FVector GetLineTraceEnd();
+
+	const FVector GetLineTraceStart();
+
 	//Ray-cast and grab what's in reach
 	void Grab();
 	void Release();
