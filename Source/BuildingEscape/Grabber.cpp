@@ -84,7 +84,7 @@ const FHitResult UGrabber::GetFirstPhysicsBodyInReach()
 	if (Hit.IsValidBlockingHit()) {
 		UE_LOG(LogTemp, Warning, TEXT("Hit %s"), *Hit.GetActor()->GetName());
 	}
-	return FHitResult();
+	return Hit;
 }
 
 
@@ -92,15 +92,24 @@ void UGrabber::Grab() {
 	UE_LOG(LogTemp, Warning, TEXT("Ya boy is grabbing"));
 
 	// Try and reach actors with physics body collision channel set
-	GetFirstPhysicsBodyInReach();
+	auto HitResult = GetFirstPhysicsBodyInReach();
+	UPrimitiveComponent* ComponentToGrab = HitResult.GetComponent();
+	auto ActorHit = HitResult.GetActor();
+
 	// If we hit something attach
-	// TODO physics stuff
+	if (ActorHit) {
+		PhysicsHandle->GrabComponentAtLocation(
+			ComponentToGrab,
+			NAME_None,
+			ActorHit->GetActorLocation()
+		);
+	}	
 }
 
 void UGrabber::Release() {
 	UE_LOG(LogTemp, Warning, TEXT("Ya boy just released"));
 
-	// TODO release physics component
+	PhysicsHandle->ReleaseComponent();
 }
 
 // Called every frame
@@ -109,7 +118,20 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// If physics handle is attached - move
+	if (PhysicsHandle->GrabbedComponent)
+	{
+		//Get player view point
+		FVector PlayerViewPointLocation;
+		FRotator PlayerViewPointRotation;
+		GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
+			OUT PlayerViewPointLocation,
+			OUT PlayerViewPointRotation
+		);
 
+		//Create Ray vector
+		FVector LineTraceEnd = PlayerViewPointLocation + (PlayerViewPointRotation.Vector() * Reach);
+		PhysicsHandle->SetTargetLocation(LineTraceEnd);
+	}
 	// Else do nothing
 
 }
